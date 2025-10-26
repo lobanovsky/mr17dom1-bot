@@ -1,0 +1,15 @@
+services:
+  mr17dom1-bot:
+    image: lobanovsky/mr17dom1-bot:${TAG}
+    container_name: mr17dom1-bot
+    restart: always
+    environment:
+      TZ: Europe/Moscow
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      DB_NAME: ${DB_NAME}
+      CHROMEDRIVER_PATH: ${CHROMEDRIVER_PATH}
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    env_file:
+      - .env
