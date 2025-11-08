@@ -1,5 +1,6 @@
 plugins {
     kotlin("jvm") version "2.2.20"
+    kotlin("plugin.serialization") version "2.2.20"
     application
     id("com.github.johnrengelman.shadow") version "8.1.1"
 }
@@ -15,6 +16,9 @@ repositories {
 
 dependencies {
     implementation("io.github.kotlin-telegram-bot.kotlin-telegram-bot:telegram:6.3.0")
+
+    // Kotlinx Serialization for JSON
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
 
     //SQLLite + exposed
     implementation("org.jetbrains.exposed:exposed-core:0.61.0")
