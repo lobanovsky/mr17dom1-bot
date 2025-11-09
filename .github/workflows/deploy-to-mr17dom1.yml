@@ -59,6 +59,9 @@ jobs:
         run: |
           echo "TAG=${{ env.SHORT_SHA }}" > .env
           echo "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}" >> .env
+          echo "HOUSEKPR_HOST=${{ secrets.HOUSEKPR_HOST }}" >> .env
+          echo "HOUSEKPR_EMAIL=${{ secrets.HOUSEKPR_EMAIL }}" >> .env
+          echo "HOUSEKPR_PASSWORD=${{ secrets.HOUSEKPR_PASSWORD }}" >> .env
           echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
 
       - name: copy files to host
