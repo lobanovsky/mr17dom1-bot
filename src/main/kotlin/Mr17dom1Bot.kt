@@ -2,7 +2,10 @@ import com.github.kotlintelegrambot.bot
 import com.github.kotlintelegrambot.dispatch
 import com.github.kotlintelegrambot.dispatcher.message
 import com.github.kotlintelegrambot.entities.ChatId
+import com.github.kotlintelegrambot.entities.keyboard.KeyboardButton
 import kotlinx.coroutines.runBlocking
+import com.github.kotlintelegrambot.entities.KeyboardReplyMarkup
+
 
 fun main() {
     val token = System.getenv("TELEGRAM_BOT_TOKEN") ?: error("Переменная окружения TELEGRAM_BOT_TOKEN не задана!")
@@ -14,6 +17,15 @@ fun main() {
 
     // Храним состояние пользователя (ожидаем ввод номера или нет)
     val waitingForPlate = mutableSetOf<Long>()
+
+    // Клавиатура с одной кнопкой
+    val keyboard = KeyboardReplyMarkup(
+        keyboard = listOf(
+            listOf(KeyboardButton("🚗 Распознать номер"))
+        ),
+        resizeKeyboard = true,
+        oneTimeKeyboard = false // Клавиатура не исчезает после нажатия
+    )
 
     val bot = bot {
         this.token = token
@@ -29,7 +41,8 @@ fun main() {
                     text == "🚗 Распознать номер" -> {
                         bot.sendMessage(
                             chatId = ChatId.fromId(chatId),
-                            text = "Введите номер автомобиля (например, A123BC777):"
+                            text = "Введите номер автомобиля (например, A123BC777):",
+                            replyMarkup = keyboard
                         )
                         waitingForPlate.add(chatId)
                     }
@@ -37,7 +50,8 @@ fun main() {
                     waitingForPlate.contains(chatId) -> {
                         bot.sendMessage(
                             chatId = ChatId.fromId(chatId),
-                            text = "🔍 Ищу информацию по номеру: $text..."
+                            text = "🔍 Ищу информацию по номеру: $text...",
+                            replyMarkup = keyboard
                         )
 
                         // ⚡️ Вызов API в корутине (runBlocking для простоты)
@@ -53,9 +67,13 @@ fun main() {
                                     📞 ${safe(info.phoneLabel)}: ${safe(info.phoneNumber)}
                                 """.trimIndent()
 
-                                bot.sendMessage(ChatId.fromId(chatId), message)
+                                bot.sendMessage(
+                                    chatId = ChatId.fromId(chatId),
+                                    text = message,
+                                    replyMarkup = keyboard
+                                )
                             } else {
-                                bot.sendMessage(ChatId.fromId(chatId), "❌ Не удалось получить данные по номеру $text.")
+                                bot.sendMessage(ChatId.fromId(chatId), "❌ Не удалось получить данные по номеру $text.", replyMarkup = keyboard)
                             }
                         }
                         waitingForPlate.remove(chatId)
@@ -64,7 +82,8 @@ fun main() {
                     else -> {
                         bot.sendMessage(
                             chatId = ChatId.fromId(chatId),
-                            text = "Чтобы начать, нажми «🚗 Распознать номер»."
+                            text = "Чтобы начать, нажми «🚗 Распознать номер».",
+                            replyMarkup = keyboard
                         )
                     }
                 }
