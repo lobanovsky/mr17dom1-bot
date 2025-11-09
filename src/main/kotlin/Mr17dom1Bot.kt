@@ -1,31 +1,25 @@
 import com.github.kotlintelegrambot.bot
 import com.github.kotlintelegrambot.dispatch
-import com.github.kotlintelegrambot.dispatcher.callbackQuery
 import com.github.kotlintelegrambot.dispatcher.message
 import com.github.kotlintelegrambot.entities.ChatId
+import kotlinx.coroutines.runBlocking
 
 fun main() {
     val token = System.getenv("TELEGRAM_BOT_TOKEN") ?: error("Переменная окружения TELEGRAM_BOT_TOKEN не задана!")
 
-    val carCommandName = "start"
+    val apiHost = System.getenv("HOUSEKPR_HOST") ?: "http://example.com"
+    val apiEmail = System.getenv("HOUSEKPR_EMAIL") ?: "e.lobanovsky@ya.ru"
+    val apiPassword = System.getenv("HOUSEKPR_PASSWORD") ?: "w4H&FrDo5U"
+    val api = HousekprApi(apiHost, apiEmail, apiPassword)
 
-    // Состояние: какие чаты ждут ввода номера авто
-    val awaitingCarNumber = mutableSetOf<Long>()
-
-//    val apiEmail = System.getenv("HOUSEKPR_EMAIL") ?: "e.lobanovsky@ya.ru"
-//    val apiPassword = System.getenv("HOUSEKPR_PASSWORD") ?: "w4H&FrDo5U"
-//    val api = HousekprApi()
+    // Храним состояние пользователя (ожидаем ввод номера или нет)
+    val waitingForPlate = mutableSetOf<Long>()
 
     val bot = bot {
         this.token = token
-        logger().info("mr17dom1-bot is running...")
-
-        // Храним состояние пользователя (ожидаем ввод номера или нет)
-        val waitingForPlate = mutableSetOf<Long>()
+        logger().info("mr17dom1-bot car recognizer is running...")
 
         dispatch {
-            commands(carCommandName)
-
             // Обработка сообщений от пользователя
             message {
                 val chatId = message.chat.id
@@ -41,22 +35,29 @@ fun main() {
                     }
 
                     waitingForPlate.contains(chatId) -> {
-                        // Здесь потом будет вызов API
                         bot.sendMessage(
                             chatId = ChatId.fromId(chatId),
                             text = "🔍 Ищу информацию по номеру: $text..."
                         )
 
-                        // Имитация ответа от API
-                        val fakeOwnerInfo = """
-                        🚘 Номер: $text
-                        👤 Собственник: Иванов Иван Иванович
-                        📍 Регион: Москва
-                        📅 Год выпуска: 2019
-                    """.trimIndent()
+                        // ⚡️ Вызов API в корутине (runBlocking для простоты)
+                        runBlocking {
+                            val info = api.getOverview(text.lowercase())
 
-                        bot.sendMessage(chatId = ChatId.fromId(chatId), text = fakeOwnerInfo)
+                            if (info != null) {
+                                val message = """
+                                    🚘 ${safe(info.carDescription)}
+                                    🔢 ${safe(info.carNumber)}
+                                    👤 ${safe(info.ownerName)}
+                                    🏠 ${safe(info.ownerRooms)}
+                                    📞 ${safe(info.phoneLabel)}: ${safe(info.phoneNumber)}
+                                """.trimIndent()
 
+                                bot.sendMessage(ChatId.fromId(chatId), message)
+                            } else {
+                                bot.sendMessage(ChatId.fromId(chatId), "❌ Не удалось получить данные по номеру $text.")
+                            }
+                        }
                         waitingForPlate.remove(chatId)
                     }
 
@@ -72,3 +73,5 @@ fun main() {
     }
     bot.startPolling()
 }
+
+fun safe(value: String?, default: String = "—"): String = value?.takeIf { it.isNotBlank() } ?: default

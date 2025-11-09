@@ -1,11 +1,13 @@
-import kotlinx.serialization.SerialName
+import io.ktor.client.*
+import io.ktor.client.call.*
+import io.ktor.client.engine.cio.*
+import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import io.ktor.http.*
+import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import java.net.URI
-import java.net.http.HttpClient
-import java.net.http.HttpRequest
-import java.net.http.HttpResponse
-import java.time.Duration
 
 @Serializable
 data class LoginRequest(
@@ -15,23 +17,24 @@ data class LoginRequest(
 
 @Serializable
 data class LoginResponse(
-    @SerialName("access_token") val accessToken: String,
-    @SerialName("token_type") val tokenType: String,
-    @SerialName("expires_in") val expiresIn: Long,
-    val userId: Long? = null
+    val access_token: String,
+    val token_type: String,
+    val expires_in: Long,
+    val userId: Int,
+    val workspaces: List<Int>
 )
 
 @Serializable
 data class OverviewArea(
-    val areaName: String,
-    val places: List<String>
+    val areaName: String? = null,
+    val places: List<String>? = emptyList()
 )
 
 @Serializable
-data class CarOverviewResponse(
-    val carNumber: String? = null,
+data class OverviewResponse(
+    val carNumber: String,
     val carDescription: String? = null,
-    val phoneNumber: String? = null,
+    val phoneNumber: String,
     val phoneLabel: String? = null,
     val tenant: Boolean? = null,
     val overviewAreas: List<OverviewArea> = emptyList(),
@@ -40,77 +43,77 @@ data class CarOverviewResponse(
 )
 
 class HousekprApi(
-    baseUrl: String = System.getenv("HOUSEKPR_BASE_URL") ?: "http://localhost:8080"
+    private val host: String,
+    private val email: String,
+    private val password: String
 ) {
-    private val base = baseUrl.trimEnd('/')
-    private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
-    private val client: HttpClient = HttpClient.newBuilder()
-//        .connectTimeout(Duration.ofSeconds(2))
-        .build()
 
-    fun login(email: String, password: String): String {
-        val url = "$base/api/login"
-        val body = json.encodeToString(LoginRequest.serializer(), LoginRequest(email, password))
-        val request = HttpRequest.newBuilder()
-            .uri(URI.create(url))
-            .timeout(Duration.ofSeconds(2))
-            .header("Content-Type", "application/json")
-            .POST(HttpRequest.BodyPublishers.ofString(body))
-            .build()
-
-        val resp = client.send(request, HttpResponse.BodyHandlers.ofString())
-        if (resp.statusCode() !in 200..299) {
-            throw RuntimeException("Auth failed: HTTP ${'$'}{resp.statusCode()} - ${'$'}{resp.body()}")
-        }
-        val parsed = json.decodeFromString(LoginResponse.serializer(), resp.body())
-        return parsed.accessToken
-    }
-
-    fun getCarOverview(carNumber: String, token: String): CarOverviewResponse {
-        val normalized = carNumber.trim()
-        val url = "$base/api/access/overview/${'$'}normalized?active=true"
-        val request = HttpRequest.newBuilder()
-            .uri(URI.create(url))
-            .timeout(Duration.ofSeconds(2))
-            .header("Authorization", "Bearer ${'$'}token")
-            .GET()
-            .build()
-        val resp = client.send(request, HttpResponse.BodyHandlers.ofString())
-        if (resp.statusCode() == 404) {
-            return CarOverviewResponse() // empty
-        }
-        if (resp.statusCode() !in 200..299) {
-            throw RuntimeException("Overview failed: HTTP ${'$'}{resp.statusCode()} - ${'$'}{resp.body()}")
-        }
-        return json.decodeFromString(CarOverviewResponse.serializer(), resp.body())
-    }
-}
-
-fun formatCarOverview(r: CarOverviewResponse): String {
-    if (r.carNumber.isNullOrBlank() && r.carDescription.isNullOrBlank()) {
-        return "Ничего не найдено по указанному номеру."
-    }
-    val b = StringBuilder()
-    r.carNumber?.let { b.appendLine("Номер: ${'$'}it") }
-    r.carDescription?.let { b.appendLine("Авто: ${'$'}it") }
-    if (!r.ownerName.isNullOrBlank()) {
-        b.appendLine("Владелец: ${'$'}{r.ownerName}")
-    }
-    if (!r.ownerRooms.isNullOrBlank()) {
-        b.appendLine("Помещения: ${'$'}{r.ownerRooms}")
-    }
-    if (!r.phoneLabel.isNullOrBlank() || !r.phoneNumber.isNullOrBlank()) {
-        val phone = r.phoneNumber ?: "—"
-        val label = r.phoneLabel ?: "—"
-        b.appendLine("Телефон: ${'$'}phone (${'$'}label)")
-    }
-    if (r.overviewAreas.isNotEmpty()) {
-        b.appendLine()
-        b.appendLine("Зоны доступа:")
-        r.overviewAreas.forEach { area ->
-            val places = if (area.places.isNotEmpty()) area.places.joinToString(", ") else "—"
-            b.appendLine("• ${'$'}{area.areaName}: ${'$'}places")
+    private val client = HttpClient(CIO) {
+        install(ContentNegotiation) {
+            json(Json { ignoreUnknownKeys = true })
         }
     }
-    return b.toString().trimEnd()
+
+    private var accessToken: String? = null
+
+    /** Авторизация */
+    suspend fun login(): Boolean {
+        val response = client.post("$host/api/login") {
+            contentType(ContentType.Application.Json)
+            setBody(LoginRequest(email, password))
+        }
+
+        return if (response.status.isSuccess()) {
+            val data: LoginResponse = response.body()
+            accessToken = data.access_token.trim()
+            logger().info("🔑 Новый токен получен (${accessToken!!.take(20)}...)")
+            true
+        } else {
+            logger().info("❌ Ошибка авторизации: ${response.status}")
+            false
+        }
+    }
+
+    /** Запрос overview с автообновлением токена */
+    suspend fun getOverview(carNumber: String): OverviewResponse? {
+        if (accessToken == null) {
+            if (!login()) return null
+        }
+
+        val result = makeOverviewRequest(carNumber)
+        if (result == null) {
+            logger().info("⚠️ Попробуем перелогиниться и повторить запрос...")
+            if (login()) {
+                return makeOverviewRequest(carNumber)
+            }
+        }
+        return result
+    }
+
+    /** Реальный запрос (без логики обновления токена) */
+    private suspend fun makeOverviewRequest(carNumber: String): OverviewResponse? {
+        try {
+            val response = client.get("$host/api/access/overview/$carNumber") {
+                url { parameters.append("active", "true") }
+                header(HttpHeaders.Authorization, "Bearer $accessToken")
+                accept(ContentType.Application.Json)
+            }
+
+            if (response.status == HttpStatusCode.Unauthorized) {
+                logger().info("❌ 401 Unauthorized — токен протух.")
+                return null
+            }
+
+            if (!response.status.isSuccess()) {
+                logger().info("❌ Ошибка API: ${response.status}")
+                logger().info(response.bodyAsText())
+                return null
+            }
+
+            return response.body()
+        } catch (e: Exception) {
+            logger().info("❌ Ошибка запроса: ${e.message}")
+            return null
+        }
+    }
 }

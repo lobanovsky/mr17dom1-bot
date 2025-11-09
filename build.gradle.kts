@@ -36,6 +36,12 @@ dependencies {
     implementation("ch.qos.logback:logback-classic:1.5.18")
     implementation("ch.qos.logback:logback-core:1.5.18")
 
+    //ktor http-client
+    implementation("io.ktor:ktor-client-core:3.3.2")
+    implementation("io.ktor:ktor-client-cio:3.3.2")
+    implementation("io.ktor:ktor-client-content-negotiation:3.3.2")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:3.3.2")
+
     testImplementation(kotlin("test"))
 }
 
