@@ -48,12 +48,6 @@ fun main() {
                     }
 
                     waitingForPlate.contains(chatId) -> {
-                        bot.sendMessage(
-                            chatId = ChatId.fromId(chatId),
-                            text = "🔍 Ищу информацию по номеру: $text...",
-                            replyMarkup = keyboard
-                        )
-
                         // ⚡️ Вызов API в корутине (runBlocking для простоты)
                         runBlocking {
                             val info = api.getOverview(text.lowercase())
