@@ -6,11 +6,8 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import java.io.File
 
 @Serializable
 data class LoginRequest(
@@ -135,9 +132,9 @@ class HousekprApi(
     suspend fun downloadReceiptPdf(
         year: String,
         month: String,
-        type: String,
+        roomType: RoomType,
         number: Int
-    ): File? {
+    ): PdfFileData? {
         if (accessToken == null) login()
 
         return try {
@@ -145,7 +142,7 @@ class HousekprApi(
                 url {
                     parameters.append("year", year)
                     parameters.append("month", month)
-                    parameters.append("type", type)
+                    parameters.append("type", roomType.name)
                     parameters.append("number", number.toString())
                 }
                 header(HttpHeaders.Authorization, "Bearer $accessToken")
@@ -157,25 +154,19 @@ class HousekprApi(
                 return null
             }
 
-            // ---- Извлекаем имя файла ----
+            // ---- имя файла из Content-Disposition ----
             val cd = response.headers[HttpHeaders.ContentDisposition]
             val fileName = cd
                 ?.substringAfter("filename=")
                 ?.trim()
                 ?.replace("\"", "")
-                ?: "receipt-$year-$month-$type-$number.pdf"
+                ?: "Квитанция МР17дом1-$year-$month-$roomType-$number.pdf"
 
-            // ---- Сохраняем в /tmp без createTempFile() ----
-            val tempDir = System.getProperty("java.io.tmpdir")
-            val file = File(tempDir, fileName)
+            // ---- читаем байты ----
+            val bytes = response.readRawBytes()
 
-            withContext(Dispatchers.IO) {
-                file.writeBytes(response.readRawBytes())
-            }
+            PdfFileData(fileName, bytes)
 
-            logger().info("📄 PDF сохранён: ${file.absolutePath}")
-
-            file
         } catch (e: Exception) {
             logger().info("❌ Ошибка при скачивании PDF: ${e.message}")
             null

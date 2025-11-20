@@ -1,6 +1,7 @@
 import com.github.kotlintelegrambot.bot
 import com.github.kotlintelegrambot.dispatch
 import com.github.kotlintelegrambot.dispatcher.message
+import com.github.kotlintelegrambot.entities.BotCommand
 import com.github.kotlintelegrambot.entities.ChatId
 import com.github.kotlintelegrambot.entities.KeyboardReplyMarkup
 import com.github.kotlintelegrambot.entities.keyboard.KeyboardButton
@@ -17,6 +18,10 @@ fun main() {
     val apiPassword = System.getenv("HOUSEKPR_PASSWORD") ?: "w4H&FrDo5U"
     val api = HousekprApi(apiHost, apiEmail, apiPassword)
 
+    val startCommandName = "start"
+    val resetCommandName = "reset"
+
+
     //Храним состояния пользователей
     val waitingForPlate = mutableSetOf<Long>() // для авто
     val receiptStates = mutableMapOf<Long, ReceiptState>() // для квитанций
@@ -24,11 +29,8 @@ fun main() {
     //Клавиатура с кнопками
     val keyboardMain = KeyboardReplyMarkup(
         keyboard = listOf(
-            listOf(KeyboardButton("🚗 Распознать номер")),
-            listOf(KeyboardButton("📄 Скачать квитанцию"))
-        ),
-        resizeKeyboard = true,
-        oneTimeKeyboard = false
+            listOf(KeyboardButton("🚗 Распознать номер")), listOf(KeyboardButton("📄 Скачать квитанцию"))
+        ), resizeKeyboard = true, oneTimeKeyboard = false
     )
 
     val botScope = CoroutineScope(Dispatchers.IO)
@@ -40,6 +42,12 @@ fun main() {
 
 
         dispatch {
+
+            commands(
+                carCommandName = "start",
+                waitingForPlate = waitingForPlate,
+                receiptStates = receiptStates
+            )
 
             // Обработка сообщений от пользователя
             message {
@@ -79,9 +87,7 @@ fun main() {
                         botScope.launch {
                             val months = api.getAvailableMonths()
                             val keyboardMonths = KeyboardReplyMarkup(
-                                keyboard = months.map { listOf(KeyboardButton(it)) },
-                                resizeKeyboard = true,
-                                oneTimeKeyboard = true
+                                keyboard = months.map { listOf(KeyboardButton(it)) }, resizeKeyboard = true, oneTimeKeyboard = true
                             )
                             bot.sendMessage(ChatId.fromId(chatId), "Выберите месяц:", replyMarkup = keyboardMonths)
                         }
@@ -98,18 +104,15 @@ fun main() {
 
                                 val keyboardType = KeyboardReplyMarkup(
                                     keyboard = listOf(
-                                        listOf(KeyboardButton("KV")),
-                                        listOf(KeyboardButton("MM"))
-                                    ),
-                                    resizeKeyboard = true,
-                                    oneTimeKeyboard = true
+                                        listOf(KeyboardButton(RoomType.FLAT.description)), listOf(KeyboardButton(RoomType.PARKING_SPACE.description))
+                                    ), resizeKeyboard = true, oneTimeKeyboard = true
                                 )
-                                bot.sendMessage(ChatId.fromId(chatId), "Выберите тип: KV — квартира, MM — машиноместо", replyMarkup = keyboardType)
+                                bot.sendMessage(ChatId.fromId(chatId), "Выберите тип: Квартира или Машиноместо", replyMarkup = keyboardType)
                             }
 
                             ReceiptStep.SELECT_TYPE -> {
-                                if (text != "KV" && text != "MM") return@message
-                                state.type = text
+                                if (text != RoomType.FLAT.description && text != RoomType.PARKING_SPACE.description) return@message
+                                state.roomType = RoomType.textToType(text)
                                 state.step = ReceiptStep.SELECT_NUMBER
 
                                 bot.sendMessage(ChatId.fromId(chatId), "Введите номер квартиры или машиноместа (1–144):")
@@ -123,18 +126,20 @@ fun main() {
                                 }
                                 state.number = number
 
-                                val (year, month) = state.month!!.split("-")
+                                val (year, month) = state.month.split("-")
                                 bot.sendMessage(ChatId.fromId(chatId), "📥 Скачиваем квитанцию...", replyMarkup = keyboardMain)
 
                                 botScope.launch {
-                                    val pdfFile = api.downloadReceiptPdf(year, month, state.type!!, number)
-                                    if (pdfFile != null) {
+                                    val pdfData = api.downloadReceiptPdf(year, month, state.roomType, number)
+
+                                    if (pdfData != null) {
+                                        val pdfFile = pdfData.toTempFile()
+
                                         telegramApi.sendDocument(
-                                            chatId = chatId,
-                                            file = pdfFile,
-                                            caption = "Квитанция ${state.type} №$number за $month.$year"
+                                            chatId = chatId, file = pdfFile, caption = "${state.roomType.description} №$number за $year.$month"
                                         )
-                                        pdfFile.delete()
+
+                                        pdfFile.delete() // удаляем файл
                                     } else {
                                         bot.sendMessage(ChatId.fromId(chatId), "❌ Не удалось скачать квитанцию", replyMarkup = keyboardMain)
                                     }
@@ -154,6 +159,15 @@ fun main() {
             }
         }
     }
+
+    // Устанавливаем список команд, чтобы они отображались в Telegram
+    bot.setMyCommands(
+        listOf(
+            BotCommand(startCommandName, "Запустить бота"),
+            BotCommand(resetCommandName, "Сбросить состояние"),
+        )
+    )
+
     bot.startPolling()
 }
 
