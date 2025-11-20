@@ -59,7 +59,7 @@ fun main() {
     // Устанавливаем список команд, чтобы они отображались в Telegram
     bot.setMyCommands(
         listOf(
-            BotCommand(resetCommandName, "🔄 Сбросить состояние"),
+            BotCommand(resetCommandName, "Сбросить состояние"),
         )
     )
 

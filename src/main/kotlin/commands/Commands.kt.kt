@@ -21,7 +21,7 @@ fun Dispatcher.commands(
 
         bot.sendMessage(
             chatId = ChatId.fromId(chatId),
-            text = "🔄 Состояние сброшено!\nВыберите действие:",
+            text = "Состояние сброшено!\nВыберите действие:",
             replyMarkup = keyboard
         )
     }
