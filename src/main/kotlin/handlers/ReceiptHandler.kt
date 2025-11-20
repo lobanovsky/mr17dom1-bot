@@ -46,7 +46,7 @@ fun Dispatcher.registerReceiptHandlers(
 
                         val keyboardType = KeyboardReplyMarkup(
                             keyboard = listOf(
-                                listOf(KeyboardButton("🏡 " + RoomType.FLAT.description)), listOf(KeyboardButton("🅿️ " + RoomType.PARKING_SPACE.description))
+                                listOf(KeyboardButton(RoomType.FLAT.description)), listOf(KeyboardButton(RoomType.PARKING_SPACE.description))
                             ), resizeKeyboard = true, oneTimeKeyboard = true
                         )
                         bot.sendMessage(ChatId.fromId(chatId), "Выберите квартиру или машиноместо", replyMarkup = keyboardType)

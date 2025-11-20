@@ -8,8 +8,8 @@ data class ReceiptState(
 )
 
 enum class RoomType(val description: String) {
-    FLAT("Квартира"),
-    PARKING_SPACE("Машиноместо");
+    FLAT("🏡 Квартира"),
+    PARKING_SPACE("🅿️ Машиноместо");
 
 
     //convert to object function
