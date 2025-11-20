@@ -12,7 +12,7 @@ import kotlinx.coroutines.launch
 fun main() {
     val token = System.getenv("TELEGRAM_BOT_TOKEN") ?: error("Переменная окружения TELEGRAM_BOT_TOKEN не задана!")
 
-    val apiHost = System.getenv("HOUSEKPR_HOST") ?: "http://example.com"
+    val apiHost = System.getenv("HOUSEKPR_HOST") ?: "http://localhost:8088"
     val apiEmail = System.getenv("HOUSEKPR_EMAIL") ?: "e.lobanovsky@ya.ru"
     val apiPassword = System.getenv("HOUSEKPR_PASSWORD") ?: "w4H&FrDo5U"
     val api = HousekprApi(apiHost, apiEmail, apiPassword)

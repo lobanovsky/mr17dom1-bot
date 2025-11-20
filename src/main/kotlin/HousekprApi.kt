@@ -132,8 +132,14 @@ class HousekprApi(
         return response.body<AvailableMonthsResponse>().months
     }
 
-    suspend fun downloadReceiptPdf(year: String, month: String, type: String, number: Int): File? {
+    suspend fun downloadReceiptPdf(
+        year: String,
+        month: String,
+        type: String,
+        number: Int
+    ): File? {
         if (accessToken == null) login()
+
         return try {
             val response: HttpResponse = client.get("$host/api/receipt/merged") {
                 url {
@@ -143,7 +149,7 @@ class HousekprApi(
                     parameters.append("number", number.toString())
                 }
                 header(HttpHeaders.Authorization, "Bearer $accessToken")
-                accept(ContentType.Application.OctetStream)
+                header(HttpHeaders.Accept, "application/pdf")
             }
 
             if (!response.status.isSuccess()) {
@@ -151,15 +157,30 @@ class HousekprApi(
                 return null
             }
 
-            // Сохраняем временный файл
-            val tempFile = File.createTempFile("receipt_", ".pdf")
+            // ---- Извлекаем имя файла ----
+            val cd = response.headers[HttpHeaders.ContentDisposition]
+            val fileName = cd
+                ?.substringAfter("filename=")
+                ?.trim()
+                ?.replace("\"", "")
+                ?: "receipt-$year-$month-$type-$number.pdf"
+
+            // ---- Сохраняем в /tmp без createTempFile() ----
+            val tempDir = System.getProperty("java.io.tmpdir")
+            val file = File(tempDir, fileName)
+
             withContext(Dispatchers.IO) {
-                tempFile.writeBytes(response.readRawBytes())
+                file.writeBytes(response.readRawBytes())
             }
-            tempFile
+
+            logger().info("📄 PDF сохранён: ${file.absolutePath}")
+
+            file
         } catch (e: Exception) {
             logger().info("❌ Ошибка при скачивании PDF: ${e.message}")
             null
         }
     }
+
+
 }
