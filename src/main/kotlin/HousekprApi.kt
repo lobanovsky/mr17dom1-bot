@@ -6,8 +6,11 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import java.io.File
 
 @Serializable
 data class LoginRequest(
@@ -41,6 +44,9 @@ data class OverviewResponse(
     val ownerName: String? = null,
     val ownerRooms: String? = null
 )
+
+@Serializable
+data class AvailableMonthsResponse(val months: List<String>)
 
 class HousekprApi(
     private val host: String,
@@ -114,6 +120,46 @@ class HousekprApi(
         } catch (e: Exception) {
             logger().info("❌ Ошибка запроса: ${e.message}")
             return null
+        }
+    }
+
+    suspend fun getAvailableMonths(): List<String> {
+        if (accessToken == null) login()
+        val response = client.get("$host/api/receipt/available-months") {
+            header(HttpHeaders.Authorization, "Bearer $accessToken")
+            accept(ContentType.Application.Json)
+        }
+        return response.body<AvailableMonthsResponse>().months
+    }
+
+    suspend fun downloadReceiptPdf(year: String, month: String, type: String, number: Int): File? {
+        if (accessToken == null) login()
+        return try {
+            val response: HttpResponse = client.get("$host/api/receipt/merged") {
+                url {
+                    parameters.append("year", year)
+                    parameters.append("month", month)
+                    parameters.append("type", type)
+                    parameters.append("number", number.toString())
+                }
+                header(HttpHeaders.Authorization, "Bearer $accessToken")
+                accept(ContentType.Application.OctetStream)
+            }
+
+            if (!response.status.isSuccess()) {
+                logger().info("❌ Ошибка скачивания PDF: ${response.status}")
+                return null
+            }
+
+            // Сохраняем временный файл
+            val tempFile = File.createTempFile("receipt_", ".pdf")
+            withContext(Dispatchers.IO) {
+                tempFile.writeBytes(response.readRawBytes())
+            }
+            tempFile
+        } catch (e: Exception) {
+            logger().info("❌ Ошибка при скачивании PDF: ${e.message}")
+            null
         }
     }
 }
