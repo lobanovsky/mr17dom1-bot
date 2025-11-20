@@ -1,3 +1,5 @@
+import handlers.ReceiptStep
+
 data class ReceiptState(
     var step: ReceiptStep = ReceiptStep.NONE,
     var month: String = "01",

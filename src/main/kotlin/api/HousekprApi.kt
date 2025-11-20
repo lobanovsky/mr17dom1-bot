@@ -1,3 +1,6 @@
+package api
+
+import RoomType
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.cio.*
@@ -8,6 +11,8 @@ import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import logger
+import java.io.File
 
 @Serializable
 data class LoginRequest(
@@ -160,7 +165,7 @@ class HousekprApi(
                 ?.substringAfter("filename=")
                 ?.trim()
                 ?.replace("\"", "")
-                ?: "Квитанция МР17дом1-$year-$month-$roomType-$number.pdf"
+                ?: "ЖКУ+Кап.ремонт ТСН \"МР17дом1\"-$year-$month-$roomType-$number.pdf"
 
             // ---- читаем байты ----
             val bytes = response.readRawBytes()
@@ -172,6 +177,16 @@ class HousekprApi(
             null
         }
     }
+}
 
+data class PdfFileData(
+    val fileName: String,
+    val bytes: ByteArray
+)
 
+fun PdfFileData.toTempFile(): File {
+    val tempDir = System.getProperty("java.io.tmpdir")
+    val file = File(tempDir, fileName)
+    file.writeBytes(bytes)
+    return file
 }

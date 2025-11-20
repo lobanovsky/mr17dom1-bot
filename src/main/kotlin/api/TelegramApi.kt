@@ -1,3 +1,5 @@
+package api
+
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.cio.*
@@ -7,6 +9,7 @@ import io.ktor.client.request.forms.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.Serializable
+import java.io.File
 
 @Serializable
 data class TgUpdate(val update_id: Long, val message: TgMessage? = null)
@@ -39,7 +42,7 @@ class TelegramApi(private val token: String) {
         }
     }
 
-    suspend fun sendDocument(chatId: Long, file: java.io.File, caption: String? = null) {
+    suspend fun sendDocument(chatId: Long, file: File, caption: String? = null) {
         client.submitFormWithBinaryData(
             url = "$baseUrl/sendDocument",
             formData = formData {
