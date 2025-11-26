@@ -6,8 +6,6 @@ services:
     environment:
       TZ: Europe/Moscow
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
-      DB_NAME: ${DB_NAME}
-      CHROMEDRIVER_PATH: ${CHROMEDRIVER_PATH}
     volumes:
       - ./data:/app/data
       - ./logs:/app/logs
