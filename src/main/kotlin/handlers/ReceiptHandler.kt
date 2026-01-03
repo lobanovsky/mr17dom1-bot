@@ -29,6 +29,11 @@ fun Dispatcher.registerReceiptHandlers(
                 receiptStates[chatId] = ReceiptState(step = ReceiptStep.SELECT_MONTH)
                 botScope.launch {
                     val months = houseApi.getAvailableMonths()
+                    if (months.isEmpty()) {
+                        bot.sendMessage(ChatId.fromId(chatId), "❌ Нет загруженных квитанций.\nОбратитесь в ТСН.", replyMarkup = keyboardMain)
+                        receiptStates.remove(chatId)
+                        return@launch
+                    }
                     val keyboardMonths = KeyboardReplyMarkup(
                         keyboard = months.map { listOf(KeyboardButton(it)) }, resizeKeyboard = true, oneTimeKeyboard = true
                     )

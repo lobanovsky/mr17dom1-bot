@@ -48,7 +48,9 @@ data class OverviewResponse(
 )
 
 @Serializable
-data class AvailableMonthsResponse(val months: List<String>)
+data class AvailableMonthsResponse(
+    val months: List<String> = emptyList()
+)
 
 class HousekprApi(
     private val host: String,
@@ -127,11 +129,24 @@ class HousekprApi(
 
     suspend fun getAvailableMonths(): List<String> {
         if (accessToken == null) login()
+
         val response = client.get("$host/api/receipt/available-months") {
             header(HttpHeaders.Authorization, "Bearer $accessToken")
             accept(ContentType.Application.Json)
         }
-        return response.body<AvailableMonthsResponse>().months
+
+        if (!response.status.isSuccess()) {
+            logger().info("❌ Ошибка получения месяцев: ${response.status}")
+            logger().info(response.bodyAsText())
+            return emptyList()
+        }
+
+        return try {
+            response.body<AvailableMonthsResponse>().months
+        } catch (e: Exception) {
+            logger().info("❌ Ошибка парсинга months: ${e.message}")
+            emptyList()
+        }
     }
 
     suspend fun downloadReceiptPdf(
