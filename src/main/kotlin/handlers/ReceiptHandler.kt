@@ -12,6 +12,7 @@ import com.github.kotlintelegrambot.entities.KeyboardReplyMarkup
 import com.github.kotlintelegrambot.entities.keyboard.KeyboardButton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import logger
 
 fun Dispatcher.registerReceiptHandlers(
     houseApi: HousekprApi,
@@ -82,9 +83,14 @@ fun Dispatcher.registerReceiptHandlers(
                             if (pdfData != null) {
                                 val pdfFile = pdfData.toTempFile()
 
-                                telegramApi.sendDocument(
-                                    chatId = chatId, file = pdfFile, caption = "ЖКУ + Кап.ремонт. ${state.roomType.description} №$number за $year.$month"
-                                )
+                                try {
+                                    telegramApi.sendDocument(chatId = chatId, file = pdfFile, caption = "ЖКУ + Кап.ремонт. ${state.roomType.description} №$number за $year.$month")
+                                } catch (e: Exception) {
+                                    logger().info("❌ Ошибка отправки PDF в Telegram: ${e.message}")
+                                    bot.sendMessage(ChatId.fromId(chatId), "❌ Не удалось отправить файл в Telegram.\nПопробуйте позже.", replyMarkup = keyboardMain)
+                                } finally {
+                                    pdfFile.delete() // удаляем файл
+                                }
 
                                 pdfFile.delete() // удаляем файл
                             } else {

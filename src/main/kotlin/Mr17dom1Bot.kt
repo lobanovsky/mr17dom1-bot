@@ -11,6 +11,7 @@ import handlers.registerReceiptHandlers
 import handlers.registerResetHandlers
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 
 
 fun main() {
@@ -41,7 +42,7 @@ fun main() {
 
     val resetCommandName = "reset"
 
-    val botScope = CoroutineScope(Dispatchers.IO)
+    val botScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     val bot = bot {
         this.token = token
