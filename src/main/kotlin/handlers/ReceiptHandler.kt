@@ -11,8 +11,10 @@ import com.github.kotlintelegrambot.entities.ChatId
 import com.github.kotlintelegrambot.entities.KeyboardReplyMarkup
 import com.github.kotlintelegrambot.entities.keyboard.KeyboardButton
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import logger
+import kotlin.coroutines.cancellation.CancellationException
 
 fun Dispatcher.registerReceiptHandlers(
     houseApi: HousekprApi,
@@ -98,11 +100,15 @@ fun Dispatcher.registerReceiptHandlers(
                                 val pdfFile = pdfData.toTempFile()
 
                                 try {
-                                    telegramApi.sendDocument(
-                                        chatId = chatId,
-                                        file = pdfFile,
-                                        caption = "ЖКУ + Кап.ремонт. ${state.roomType.description} №$number за $year.$month"
-                                    )
+                                    sendWithRetry {
+                                        telegramApi.sendDocument(
+                                            chatId = chatId,
+                                            file = pdfFile,
+                                            caption = "ЖКУ + Кап.ремонт. ${state.roomType.description} №$number за $year.$month"
+                                        )
+                                    }
+                                } catch (e: CancellationException) {
+                                    logger().warn("⏱ Отправка PDF отменена (timeout): ${e.message}")
                                 } catch (e: Exception) {
                                     logger().info("❌ Ошибка отправки PDF в Telegram: ${e.message}")
                                     bot.sendMessage(
@@ -135,4 +141,19 @@ enum class ReceiptStep {
     SELECT_MONTH,
     SELECT_TYPE,
     SELECT_NUMBER
+}
+
+suspend fun sendWithRetry(
+    retries: Int = 3,
+    block: suspend () -> Unit
+) {
+    repeat(retries - 1) {
+        try {
+            block()
+            return
+        } catch (e: Exception) {
+            delay(1500)
+        }
+    }
+    block()
 }

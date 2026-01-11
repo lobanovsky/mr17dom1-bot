@@ -3,6 +3,7 @@ package api
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.cio.*
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
@@ -27,6 +28,11 @@ class TelegramApi(private val token: String) {
 
     val client = HttpClient(CIO) {
         install(ContentNegotiation) { json() }
+        install(HttpTimeout) {
+            requestTimeoutMillis = 60_000
+            connectTimeoutMillis = 15_000
+            socketTimeoutMillis = 60_000
+        }
     }
 
     suspend fun getUpdates(offset: Long?): List<TgUpdate> =
