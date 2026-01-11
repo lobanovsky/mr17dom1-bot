@@ -14,6 +14,9 @@ enum class RoomType(val description: String) {
 
     //convert to object function
     companion object {
+        fun fromDescription(text: String): RoomType? =
+            entries.firstOrNull { it.description == text }
+
         fun textToType(text: String): RoomType {
             return when (text) {
                 FLAT.description -> FLAT

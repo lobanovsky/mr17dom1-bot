@@ -47,6 +47,11 @@ fun Dispatcher.registerReceiptHandlers(
 
                 when (state.step) {
                     ReceiptStep.SELECT_MONTH -> {
+                        val monthRegex = Regex("""^\d{4}-(0[1-9]|1[0-2])$""")
+                        if (!monthRegex.matches(text)) {
+                            bot.sendMessage(ChatId.fromId(chatId), "Неверный формат месяца. Выберите месяц из списка:")
+                            return@message
+                        }
                         state.month = text
                         state.step = ReceiptStep.SELECT_TYPE
 
@@ -59,7 +64,16 @@ fun Dispatcher.registerReceiptHandlers(
                     }
 
                     ReceiptStep.SELECT_TYPE -> {
-                        if (text != RoomType.FLAT.description && text != RoomType.PARKING_SPACE.description) return@message
+                        val roomType = RoomType.fromDescription(text)
+
+                        if (roomType == null) {
+                            bot.sendMessage(
+                                ChatId.fromId(chatId),
+                                "❌ Неверный тип помещения.\n" + "Пожалуйста, выберите один из вариантов:\n" + "• ${RoomType.FLAT.description}\n" + "• ${RoomType.PARKING_SPACE.description}"
+                            )
+                            return@message
+                        }
+
                         state.roomType = RoomType.textToType(text)
                         state.step = ReceiptStep.SELECT_NUMBER
 
@@ -84,10 +98,18 @@ fun Dispatcher.registerReceiptHandlers(
                                 val pdfFile = pdfData.toTempFile()
 
                                 try {
-                                    telegramApi.sendDocument(chatId = chatId, file = pdfFile, caption = "ЖКУ + Кап.ремонт. ${state.roomType.description} №$number за $year.$month")
+                                    telegramApi.sendDocument(
+                                        chatId = chatId,
+                                        file = pdfFile,
+                                        caption = "ЖКУ + Кап.ремонт. ${state.roomType.description} №$number за $year.$month"
+                                    )
                                 } catch (e: Exception) {
                                     logger().info("❌ Ошибка отправки PDF в Telegram: ${e.message}")
-                                    bot.sendMessage(ChatId.fromId(chatId), "❌ Не удалось отправить файл в Telegram.\nПопробуйте позже.", replyMarkup = keyboardMain)
+                                    bot.sendMessage(
+                                        ChatId.fromId(chatId),
+                                        "❌ Не удалось отправить файл в Telegram.\nПопробуйте позже.",
+                                        replyMarkup = keyboardMain
+                                    )
                                 } finally {
                                     pdfFile.delete() // удаляем файл
                                 }
