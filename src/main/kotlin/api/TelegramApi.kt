@@ -1,26 +1,22 @@
 package api
 
 import io.ktor.client.*
-import io.ktor.client.call.*
 import io.ktor.client.engine.cio.*
-import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
-import kotlinx.serialization.Serializable
-import logger
 import java.io.File
 
-@Serializable
-data class TgUpdate(val update_id: Long, val message: TgMessage? = null)
+//@Serializable
+//data class TgUpdate(val update_id: Long, val message: TgMessage? = null)
 
-@Serializable
-data class TgMessage(val message_id: Long, val chat: TgChat, val text: String? = null)
+//@Serializable
+//data class TgMessage(val message_id: Long, val chat: TgChat, val text: String? = null)
 
-@Serializable
-data class TgChat(val id: Long)
+//@Serializable
+//data class TgChat(val id: Long)
 
 class TelegramApi(token: String) {
 
@@ -30,19 +26,13 @@ class TelegramApi(token: String) {
     val client = HttpClient(CIO) {
         install(ContentNegotiation) { json() }
         install(HttpTimeout) {
-            requestTimeoutMillis = 1_000
-            connectTimeoutMillis = 5_000
-            socketTimeoutMillis = 5_000
-        }
-        engine {
-            maxConnectionsCount = 100
-            endpoint {
-                connectTimeout = 1_000
-                keepAliveTime = 5_000
-            }
+            requestTimeoutMillis = 4_000
+            connectTimeoutMillis = 2_000
+            socketTimeoutMillis = 3_000
         }
     }
 
+    /*
     suspend fun getUpdates(offset: Long?): List<TgUpdate> =
         client.get("$baseUrl/getUpdates") {
             offset?.let { parameter("offset", it) }
@@ -55,6 +45,7 @@ class TelegramApi(token: String) {
             setBody(mapOf("chat_id" to chatId, "text" to text))
         }
     }
+*/
 
     suspend fun sendDocument(chatId: Long, file: File, caption: String? = null) {
         client.submitFormWithBinaryData(

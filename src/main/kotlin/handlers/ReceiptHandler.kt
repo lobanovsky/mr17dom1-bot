@@ -11,7 +11,6 @@ import com.github.kotlintelegrambot.entities.ChatId
 import com.github.kotlintelegrambot.entities.KeyboardReplyMarkup
 import com.github.kotlintelegrambot.entities.keyboard.KeyboardButton
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import logger
 import sendWithRetry
@@ -104,7 +103,7 @@ fun Dispatcher.registerReceiptHandlers(
                                 try {
                                     sendWithRetry(
                                         logger = this.logger(),
-                                        delayMs = 800,
+                                        delayMs = 600,
                                         operationName = "Отправка PDF в Telegram"
                                     ) {
                                         telegramApi.sendDocument(
