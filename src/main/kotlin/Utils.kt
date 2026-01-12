@@ -23,9 +23,7 @@ suspend fun sendWithRetry(
             logger.warn("⏹ $operationName — отменено (попытка $attemptNumber)")
             throw e
         } catch (e: Exception) {
-            logger.warn(
-                "⚠️ $operationName — ошибка на попытке $attemptNumber из $retries: ${e.message}"
-            )
+            logger.warn("⚠️ $operationName — ошибка на попытке $attemptNumber из $retries: ${e.message}")
 
             if (attemptNumber == retries) {
                 logger.error("❌ $operationName — все попытки исчерпаны", e)
