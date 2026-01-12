@@ -14,6 +14,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import logger
+import sendWithRetry
 import kotlin.coroutines.cancellation.CancellationException
 
 fun Dispatcher.registerReceiptHandlers(
@@ -101,7 +102,10 @@ fun Dispatcher.registerReceiptHandlers(
                                 logger().info("Скачан PDF файл квитанции для ${state.roomType.description} №$number за $year.$month. Path: ${pdfFile.absolutePath}")
 
                                 try {
-                                    sendWithRetry {
+                                    sendWithRetry(
+                                        logger = this.logger(),
+                                        operationName = "Отправка PDF в Telegram"
+                                    ) {
                                         telegramApi.sendDocument(
                                             chatId = chatId,
                                             file = pdfFile,
@@ -143,19 +147,4 @@ enum class ReceiptStep {
     SELECT_MONTH,
     SELECT_TYPE,
     SELECT_NUMBER
-}
-
-suspend fun sendWithRetry(
-    retries: Int = 3,
-    block: suspend () -> Unit
-) {
-    repeat(retries - 1) {
-        try {
-            block()
-            return
-        } catch (e: Exception) {
-            delay(1500)
-        }
-    }
-    block()
 }

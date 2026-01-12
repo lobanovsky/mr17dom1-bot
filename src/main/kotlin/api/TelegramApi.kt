@@ -44,8 +44,6 @@ class TelegramApi(token: String) {
     }
 
     suspend fun sendDocument(chatId: Long, file: File, caption: String? = null) {
-        logger().info("Sending document. chatId=$chatId, file=${file.name}, caption=$caption")
-        logger().info("File size: ${file.length()} bytes")
         client.submitFormWithBinaryData(
             url = "$baseUrl/sendDocument",
             formData = formData {
