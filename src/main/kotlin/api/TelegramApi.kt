@@ -3,7 +3,6 @@ package api
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.cio.*
-import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
@@ -22,18 +21,13 @@ data class TgMessage(val message_id: Long, val chat: TgChat, val text: String? =
 @Serializable
 data class TgChat(val id: Long)
 
-class TelegramApi(private val token: String) {
+class TelegramApi(token: String) {
 
     private val baseUrl = "https://api.telegram.org/bot$token"
-    private val fileBase = "https://api.telegram.org/file/bot$token"
+//    private val fileBase = "https://api.telegram.org/file/bot$token"
 
     val client = HttpClient(CIO) {
         install(ContentNegotiation) { json() }
-        install(HttpTimeout) {
-            requestTimeoutMillis = 60_000
-            connectTimeoutMillis = 15_000
-            socketTimeoutMillis = 60_000
-        }
     }
 
     suspend fun getUpdates(offset: Long?): List<TgUpdate> =
