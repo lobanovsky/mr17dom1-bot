@@ -91,7 +91,7 @@ fun Dispatcher.registerReceiptHandlers(
                         state.number = number
 
                         val (year, month) = state.month.split("-")
-                        bot.sendMessage(ChatId.fromId(chatId), "📥 Скачиваем квитанцию... для chatId = $chatId", replyMarkup = keyboardMain)
+                        bot.sendMessage(ChatId.fromId(chatId), "📥 Скачиваем квитанцию...", replyMarkup = keyboardMain)
 
                         botScope.launch {
                             val pdfData = houseApi.downloadReceiptPdf(year, month, state.roomType, number)
@@ -121,11 +121,11 @@ fun Dispatcher.registerReceiptHandlers(
                                         replyMarkup = keyboardMain
                                     )
                                 } finally {
-//                                    pdfFile.delete() // удаляем файл
+                                    pdfFile.delete() // удаляем файл
 
                                 }
 
-//                                pdfFile.delete() // удаляем файл
+                                pdfFile.delete() // удаляем файл
                             } else {
                                 bot.sendMessage(ChatId.fromId(chatId), "❌ Не удалось скачать квитанцию", replyMarkup = keyboardMain)
                             }
