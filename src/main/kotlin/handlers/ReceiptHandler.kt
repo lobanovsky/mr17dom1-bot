@@ -98,6 +98,7 @@ fun Dispatcher.registerReceiptHandlers(
 
                             if (pdfData != null) {
                                 val pdfFile = pdfData.toTempFile()
+                                logger().info("Скачан PDF файл квитанции для ${state.roomType.description} №$number за $year.$month. Path: ${pdfFile.absolutePath}")
 
                                 try {
                                     sendWithRetry {
@@ -117,10 +118,11 @@ fun Dispatcher.registerReceiptHandlers(
                                         replyMarkup = keyboardMain
                                     )
                                 } finally {
-                                    pdfFile.delete() // удаляем файл
+//                                    pdfFile.delete() // удаляем файл
+
                                 }
 
-                                pdfFile.delete() // удаляем файл
+//                                pdfFile.delete() // удаляем файл
                             } else {
                                 bot.sendMessage(ChatId.fromId(chatId), "❌ Не удалось скачать квитанцию", replyMarkup = keyboardMain)
                             }
