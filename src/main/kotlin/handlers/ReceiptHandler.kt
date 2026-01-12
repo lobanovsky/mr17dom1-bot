@@ -104,6 +104,7 @@ fun Dispatcher.registerReceiptHandlers(
                                 try {
                                     sendWithRetry(
                                         logger = this.logger(),
+                                        delayMs = 800,
                                         operationName = "Отправка PDF в Telegram"
                                     ) {
                                         telegramApi.sendDocument(
