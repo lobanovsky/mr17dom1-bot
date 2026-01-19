@@ -116,10 +116,7 @@ fun Dispatcher.registerReceiptHandlers(
                                     )
                                 } finally {
                                     pdfFile.delete() // удаляем файл
-
                                 }
-
-                                pdfFile.delete() // удаляем файл
                             } else {
                                 bot.sendMessage(ChatId.fromId(chatId), "❌ Не удалось скачать квитанцию", replyMarkup = keyboardMain)
                             }
