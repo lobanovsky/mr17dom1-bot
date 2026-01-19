@@ -13,7 +13,6 @@ import com.github.kotlintelegrambot.entities.keyboard.KeyboardButton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import logger
-import sendWithRetry
 import kotlin.coroutines.cancellation.CancellationException
 
 fun Dispatcher.registerReceiptHandlers(
@@ -101,16 +100,11 @@ fun Dispatcher.registerReceiptHandlers(
                                 logger().info("Скачан PDF файл квитанции для ${state.roomType.description} №$number за $year.$month. Path: ${pdfFile.absolutePath}")
 
                                 try {
-                                    sendWithRetry(
-                                        logger = this.logger(),
-                                        operationName = "Отправка PDF в Telegram"
-                                    ) {
-                                        telegramApi.sendDocument(
-                                            chatId = chatId,
-                                            file = pdfFile,
-                                            caption = "ЖКУ + Кап.ремонт. ${state.roomType.description} №$number за $year.$month"
-                                        )
-                                    }
+                                    telegramApi.sendDocument(
+                                        chatId = chatId,
+                                        file = pdfFile,
+                                        caption = "ЖКУ + Кап.ремонт. ${state.roomType.description} №$number за $year.$month"
+                                    )
                                 } catch (e: CancellationException) {
                                     logger().warn("⏱ Отправка PDF отменена (timeout): ${e.message}")
                                 } catch (e: Exception) {
