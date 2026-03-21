@@ -26,9 +26,9 @@ class TelegramApi(token: String) {
     val client = HttpClient(CIO) {
         install(ContentNegotiation) { json() }
         install(HttpTimeout) {
-            requestTimeoutMillis = 10_000
+            requestTimeoutMillis = 60_000
             connectTimeoutMillis = 5_000
-            socketTimeoutMillis = 10_000
+            socketTimeoutMillis = 60_000
         }
     }
 
