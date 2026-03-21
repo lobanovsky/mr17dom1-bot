@@ -1,7 +1,6 @@
 package api
 
 import io.ktor.client.*
-import io.ktor.client.engine.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
@@ -10,12 +9,19 @@ import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import java.io.File
 
+//@Serializable
+//data class TgUpdate(val update_id: Long, val message: TgMessage? = null)
+
+//@Serializable
+//data class TgMessage(val message_id: Long, val chat: TgChat, val text: String? = null)
+
+//@Serializable
+//data class TgChat(val id: Long)
+
 class TelegramApi(token: String) {
 
     private val baseUrl = "https://api.telegram.org/bot$token"
-
-    private val socksServer = System.getenv("SOCKS_SERVER")
-    private val socksPort = System.getenv("SOCKS_PORT")?.toIntOrNull()
+//    private val fileBase = "https://api.telegram.org/file/bot$token"
 
     val client = HttpClient(CIO) {
         install(ContentNegotiation) { json() }
@@ -24,12 +30,22 @@ class TelegramApi(token: String) {
             connectTimeoutMillis = 5_000
             socketTimeoutMillis = 60_000
         }
-        engine {
-            if (!socksServer.isNullOrBlank() && socksPort != null) {
-                proxy = ProxyBuilder.socks(socksServer, socksPort)
-            }
+    }
+
+    /*
+    suspend fun getUpdates(offset: Long?): List<TgUpdate> =
+        client.get("$baseUrl/getUpdates") {
+            offset?.let { parameter("offset", it) }
+            parameter("timeout", 50)
+        }.body()
+
+    suspend fun sendMessage(chatId: Long, text: String) {
+        client.post("$baseUrl/sendMessage") {
+            contentType(ContentType.Application.Json)
+            setBody(mapOf("chat_id" to chatId, "text" to text))
         }
     }
+*/
 
     suspend fun sendDocument(chatId: Long, file: File, caption: String? = null) {
         client.submitFormWithBinaryData(
