@@ -44,31 +44,31 @@ fun main() {
 
     val botScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    val socksServer = System.getenv("SOCKS_SERVER")
-    val socksPort = System.getenv("SOCKS_PORT")?.toIntOrNull()
-    val socksUser = System.getenv("SOCKS_USER")
-    val socksPass = System.getenv("SOCKS_PASS")
-
-    val proxy = if (!socksServer.isNullOrBlank() && socksPort != null) {
-        if (!socksUser.isNullOrBlank() && !socksPass.isNullOrBlank()) {
-            java.net.Authenticator.setDefault(object : java.net.Authenticator() {
-                override fun getPasswordAuthentication(): java.net.PasswordAuthentication? {
-                    if (requestingHost == socksServer && requestingPort == socksPort) {
-                        return java.net.PasswordAuthentication(socksUser, socksPass.toCharArray())
-                    }
-                    return null
-                }
-            })
-        }
-        logger().info("Используется SOCKS5 прокси: $socksServer:$socksPort")
-        java.net.Proxy(java.net.Proxy.Type.SOCKS, java.net.InetSocketAddress(socksServer, socksPort))
-    } else {
-        java.net.Proxy.NO_PROXY
-    }
+//    val socksServer = System.getenv("SOCKS_SERVER")
+//    val socksPort = System.getenv("SOCKS_PORT")?.toIntOrNull()
+//    val socksUser = System.getenv("SOCKS_USER")
+//    val socksPass = System.getenv("SOCKS_PASS")
+//
+//    val proxy = if (!socksServer.isNullOrBlank() && socksPort != null) {
+//        if (!socksUser.isNullOrBlank() && !socksPass.isNullOrBlank()) {
+//            java.net.Authenticator.setDefault(object : java.net.Authenticator() {
+//                override fun getPasswordAuthentication(): java.net.PasswordAuthentication? {
+//                    if (requestingHost == socksServer && requestingPort == socksPort) {
+//                        return java.net.PasswordAuthentication(socksUser, socksPass.toCharArray())
+//                    }
+//                    return null
+//                }
+//            })
+//        }
+//        logger().info("Используется SOCKS5 прокси: $socksServer:$socksPort")
+//        java.net.Proxy(java.net.Proxy.Type.SOCKS, java.net.InetSocketAddress(socksServer, socksPort))
+//    } else {
+//        java.net.Proxy.NO_PROXY
+//    }
 
     val bot = bot {
         this.token = token
-        this.proxy = proxy
+//        this.proxy = proxy
         logger().info("mr17dom1-bot запущен")
 
         dispatch {
