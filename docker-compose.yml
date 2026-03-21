@@ -6,6 +6,10 @@ services:
     environment:
       TZ: Europe/Moscow
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      SOCKS_SERVER: ${SOCKS_SERVER}
+      SOCKS_PORT: ${SOCKS_PORT}
+      SOCKS_USER: ${SOCKS_USER}
+      SOCKS_PASS: ${SOCKS_PASS}
     volumes:
       - ./data:/app/data
       - ./logs:/app/logs

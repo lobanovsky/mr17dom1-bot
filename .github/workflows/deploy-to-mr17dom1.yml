@@ -1,4 +1,4 @@
-name: Build and Push Docker Image
+name: to-mr17dom1
 
 on:
   push:
@@ -62,6 +62,10 @@ jobs:
           echo "HOUSEKPR_HOST=${{ secrets.HOUSEKPR_HOST }}" >> .env
           echo "HOUSEKPR_EMAIL=${{ secrets.HOUSEKPR_EMAIL }}" >> .env
           echo "HOUSEKPR_PASSWORD=${{ secrets.HOUSEKPR_PASSWORD }}" >> .env
+          echo "SOCKS_SERVER=${{ secrets.SOCKS_SERVER}}" >> .env
+          echo "SOCKS_PORT=${{ secrets.SOCKS_PORT }}" >> .env
+          echo "SOCKS_USER=${{ secrets.SOCKS_USER }}" >> .env
+          echo "SOCKS_PASS=${{ secrets.SOCKS_PASS }}" >> .env
 
       - name: copy files to host
         uses: appleboy/scp-action@v0.1.7
